@@ -155,7 +155,7 @@ func update(screen *ebiten.Image) (e error) {
 	sW = float64(screenW)
 	d0 = float64(primary)
 	d1 = float64(primary + distance)
-	d2 = golden.Ratio(d0, d1)
+	d2 = golden.Next(d0, d1)
 	if d0 < 0 {
 		d0 = sW + d0
 	} else if d0 > sW {
@@ -187,8 +187,8 @@ func update(screen *ebiten.Image) (e error) {
 
 	// draw color boxes
 	colorPrimary = screen.At(int(math.Round(d0)), brightness)
-	colorSecondary = screen.At(int(math.Round(d2)), brightness)
-	colorTertiary = screen.At(int(math.Round(d1)), brightness)
+	colorSecondary = screen.At(int(math.Round(d1)), brightness)
+	colorTertiary = screen.At(int(math.Round(d2)), brightness)
 
 	// convert colors to CMYK
 	cpR32, cpG32, cpB32, _ := colorPrimary.RGBA()
