@@ -23,8 +23,8 @@ import (
 // colorStop objects hold data about each colored stop
 type colorStop struct {
 	color      color.Color // the color
-	val        float64     // stop value, different from x (for calculating the others)
-	x          float64     // x offset
+	val        float64     // stop value, different from offset (for calculating the others)
+	off        float64     // x or y offset
 	c, m, y, k uint8       // CMYK colors
 	r, g, b    uint8       // RGB colors
 }
@@ -59,15 +59,15 @@ func (s *colorStop) setColor(c color.Color) {
 
 func (s *colorStop) setVal(val float64) {
 	s.val = val
-	s.x = val
+	s.off = val
 	sW := float64(screenW)
-	if s.x < 0 {
-		for s.x < 0 {
-			s.x = sW + s.x
+	if s.off < 0 {
+		for s.off < 0 {
+			s.off = sW + s.off
 		}
-	} else if s.x > sW {
-		for s.x > sW {
-			s.x -= sW
+	} else if s.off > sW {
+		for s.off > sW {
+			s.off -= sW
 		}
 	}
 }
@@ -80,7 +80,7 @@ var (
 	dragging bool
 	ctrlDown bool // ctrl button is down
 
-	outputH = 250
+	outputH = 300
 	padding = 20
 	pickerH = 511
 	pickerW = 1536
@@ -99,6 +99,8 @@ var (
 	stopmin    = 3
 	stops      = 3
 	stoplist   []colorStop
+
+	colorMatrix [16][8]colorPoint // color selection matrix
 
 	// arcadeFont font face
 	arcadeFont font.Face
@@ -215,7 +217,7 @@ func update(screen *ebiten.Image) (e error) {
 	if inpututil.IsKeyJustReleased(ebiten.KeyMinus) {
 		stops--
 	}
-	// keep stops within bounds 2-8)
+	// keep stops within bounds
 	if stops > stopmax {
 		stops = stopmax
 	} else if stops < stopmin {
@@ -228,7 +230,7 @@ func update(screen *ebiten.Image) (e error) {
 	if inpututil.IsKeyJustReleased(ebiten.KeyLeftBracket) {
 		step -= stepmod
 	}
-	// keep step within bounds 1-50)
+	// keep step within bounds
 	if step > stepmax {
 		step = stepmax
 	} else if step < stepmin {
@@ -256,8 +258,6 @@ func update(screen *ebiten.Image) (e error) {
 			dragging = true
 			primary = px
 			brightness = py
-		} else {
-			// TODO click colors to copy
 		}
 	} else if dragging && inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		dragging = false
@@ -323,7 +323,7 @@ func update(screen *ebiten.Image) (e error) {
 		if i == stops {
 			break
 		}
-		stoplist[i].setColor(screen.At(int(math.Round(stoplist[i].x)), brightness))
+		stoplist[i].setColor(screen.At(int(math.Round(stoplist[i].off)), brightness))
 	}
 
 	bright := uint8(brightness / 2)
@@ -339,7 +339,7 @@ func update(screen *ebiten.Image) (e error) {
 			break
 		}
 		// draw the guide line in the negtive color from the value of the stop
-		ebitenutil.DrawLine(screen, stoplist[i].x, 0, stoplist[i].x, float64(pickerH), stoplist[i].negative())
+		ebitenutil.DrawLine(screen, stoplist[i].off, 0, stoplist[i].off, float64(pickerH), stoplist[i].negative())
 		// draw the box that represents this color
 		stopOffset := i * (selectedBounds.Max.X + padding)
 		stopBounds := image.Rect(padding+stopOffset, selectedMinY, padding+stopOffset+selectedBounds.Max.X, selectedMaxY)
